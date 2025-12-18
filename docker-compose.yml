@@ -1,0 +1,38 @@
+networks: 
+    todolist-api-network:
+        driver: bridge
+
+services:
+    todolist-api:
+        build: 
+            context: ./
+            dockerfile: Dockerfile
+        container_name: todolist-api
+        ports: 
+            - ${PORT}:${PORT}
+        restart: unless-stopped
+        networks:
+            - todolist-api-network
+        depends_on:
+            database-api:
+                condition: service_healthy
+                restart: true
+    database-api:
+        image: mysql:8.0
+        container_name: database-api
+        volumes:
+            - ./docker/mysql/data:/var/lib/mysql
+        ports: 
+            - 3307:3306
+        environment:
+            - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+            - MYSQL_DATABASE=${MYSQL_DATABASE}
+        networks:
+            - todolist-api-network
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_PASSWORD}"]
+            interval: 10s
+            retries: 5
+            start_period: 30s
+            timeout: 10s
+        
